@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kana Sprint">
+<meta name="theme-color" content="#121211">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Kana Sprint</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f2;
+  --surface: #fcfcfb;
+  --surface-2: #efeee9;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #8a8984;
+  --border: #dddcd6;
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --miss: #e34948;
+  --hit: #2a78d6;
+  --grid: #e8e7e2;
+  /* mastery ramp: weak -> strong (sequential blue, stepped for the light surface) */
+  --m0: #cde2fb; --m1: #9ec5f4; --m2: #6da7ec; --m3: #3987e5; --m4: #256abf; --m5: #104281;
+  --mt0: #0b0b0b; --mt1: #0b0b0b; --mt2: #0b0b0b; --mt3: #ffffff; --mt4: #ffffff; --mt5: #ffffff;
+  --unseen: #efeee9; --unseen-t: #8a8984;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --surface-2: #262624;
+    --text: #ffffff; --text-2: #c3c2b7; --muted: #8a8981; --border: #33332f;
+    --accent: #3987e5; --miss: #e66767; --hit: #3987e5; --grid: #2a2a27;
+    --m0: #0d366b; --m1: #184f95; --m2: #256abf; --m3: #3987e5; --m4: #6da7ec; --m5: #b7d3f6;
+    --mt0: #ffffff; --mt1: #ffffff; --mt2: #ffffff; --mt3: #ffffff; --mt4: #0b0b0b; --mt5: #0b0b0b;
+    --unseen: #262624; --unseen-t: #8a8981;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --surface-2: #262624;
+  --text: #ffffff; --text-2: #c3c2b7; --muted: #8a8981; --border: #33332f;
+  --accent: #3987e5; --miss: #e66767; --hit: #3987e5; --grid: #2a2a27;
+  --m0: #0d366b; --m1: #184f95; --m2: #256abf; --m3: #3987e5; --m4: #6da7ec; --m5: #b7d3f6;
+  --mt0: #ffffff; --mt1: #ffffff; --mt2: #ffffff; --mt3: #ffffff; --mt4: #0b0b0b; --mt5: #0b0b0b;
+  --unseen: #262624; --unseen-t: #8a8981;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.jp { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 16px 64px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); margin: 28px 0 10px; font-weight: 600; }
+.sub { color: var(--text-2); }
+.muted { color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.hidden { display: none !important; }
+header.top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+.chip {
+  border: 1px solid var(--border); background: var(--surface); border-radius: 999px;
+  padding: 6px 14px; display: inline-flex; gap: 6px; align-items: baseline;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip[aria-pressed="true"] .muted { color: inherit; opacity: 0.75; }
+.btn { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 8px 14px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; padding: 10px 22px; }
+.btn.danger-armed { border-color: var(--miss); color: var(--miss); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+kbd { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface-2); }
+.label { width: 92px; color: var(--text-2); font-size: 13px; }
+.setting-row { display: flex; gap: 12px; align-items: center; padding: 8px 0; flex-wrap: wrap; }
+.setting-row + .setting-row { border-top: 1px solid var(--border); }
+
+/* run screen */
+#run { min-height: calc(100vh - 88px); display: flex; flex-direction: column; }
+.hud { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.clock { font: 600 40px/1 ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+.clock.low { color: var(--miss); }
+.hud-stats { display: flex; gap: 20px; }
+.hud-stat { text-align: right; }
+.hud-stat b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.hud-stat span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.timebar { height: 4px; background: var(--surface-2); border-radius: 2px; margin: 14px 0 0; overflow: hidden; }
+.timebar > div { height: 100%; background: var(--accent); width: 100%; transition: width 0.1s linear; }
+.stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px 0; }
+.kana { font-size: clamp(110px, 22vw, 190px); line-height: 1; font-weight: 400; transition: color 0.12s; user-select: none; }
+.kana.miss { color: var(--miss); }
+.reveal { font-size: 26px; min-height: 36px; color: var(--miss); font-weight: 600; }
+#answer {
+  font: 500 30px/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center;
+  width: min(280px, 100%); padding: 12px; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--surface); color: var(--text); outline: none;
+}
+#answer:focus { border-color: var(--accent); }
+.hint { color: var(--muted); font-size: 13px; text-align: center; }
+.trail { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; min-height: 34px; }
+.trail .t { font-size: 18px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); }
+.trail .t.bad { border-color: var(--miss); color: var(--miss); }
+.trail .t .i { font-size: 11px; margin-left: 3px; }
+.lastmiss { min-height: 22px; color: var(--text-2); font-size: 14px; }
+.lastmiss b { color: var(--text); }
+
+/* results */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.tile .v { font-size: 32px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile .k { color: var(--text-2); font-size: 13px; }
+.tile .d { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.chart { width: 100%; display: block; overflow: visible; }
+.chart text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--text-2); align-items: center; flex-wrap: wrap; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 680px) { .two { grid-template-columns: 1fr; } .hud-stats { gap: 14px; } }
+.endbtn { display: none; }
+/* touch devices: no keyboard hints, an End button instead of Esc, and a run screen that fits above the on-screen keyboard */
+@media (hover: none) {
+  kbd { display: none; }
+  .endbtn { display: inline-block; padding: 4px 10px; font-size: 13px; }
+  #run { min-height: 0; }
+  .stage { justify-content: flex-start; gap: 10px; padding: 12px 0; }
+  .kana { font-size: clamp(90px, 28vw, 150px); }
+  .reveal { min-height: 30px; font-size: 22px; }
+  .clock { font-size: 30px; }
+  .hud-stat b { font-size: 18px; }
+  .trail .t:nth-child(n+7) { display: none; }
+  .grid .c { width: 38px; height: 42px; }
+  .grid.combo .c { width: 48px; }
+  .grid .c .ch { font-size: 17px; }
+}
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+td.num, th.num { text-align: right; }
+td .big { font-size: 22px; }
+.delta-up { color: var(--text); }
+.tablewrap { overflow-x: auto; }
+
+/* mastery grid */
+.grids { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+.grid { display: grid; gap: 3px; }
+.grid .c {
+  width: 44px; height: 46px; border-radius: 6px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; line-height: 1.05; position: relative;
+}
+.grid.combo .c { width: 54px; }
+.grid .c .ch { font-size: 20px; }
+.grid .c .ro { font-size: 10px; opacity: 0.8; }
+.grid .c.empty { background: transparent; }
+.grid .c.cur { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
+.grid .c.off { opacity: 0.35; }
+.gtitle { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.tabs button { border: 0; background: var(--surface); padding: 5px 12px; }
+.tabs button[aria-pressed="true"] { background: var(--surface-2); font-weight: 600; }
+.ramp { display: inline-flex; gap: 2px; vertical-align: middle; margin: 0 6px; }
+.ramp i { width: 16px; height: 10px; border-radius: 2px; display: inline-block; }
+
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15); max-width: 260px; white-space: pre-line;
+}
+.weak-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.weak-list .w { border: 1px solid var(--border); border-radius: 8px; padding: 4px 9px; background: var(--surface); }
+.weak-list .w .ch { font-size: 20px; margin-right: 4px; }
+</style>
+</head>
+<body>
+<main>
+
+<!-- ============ SETUP ============ -->
+<section id="setup">
+  <header class="top">
+    <h1>Kana Sprint <span class="muted jp" style="font-weight:400">かな</span></h1>
+    <span class="sub" id="lifetime"></span>
+  </header>
+  <p class="sub" style="margin-top:4px">Type the romaji for each kana. Answer as many as you can before the clock runs out. Kana you miss or answer slowly come back more often.</p>
+
+  <div class="card">
+    <div class="setting-row">
+      <div class="label">Hiragana</div>
+      <div class="row" id="sets-h"></div>
+    </div>
+    <div class="setting-row">
+      <div class="label">Katakana</div>
+      <div class="row" id="sets-k"></div>
+    </div>
+    <div class="setting-row">
+      <div class="label">Timer</div>
+      <div class="row" id="durations"></div>
+    </div>
+    <div class="setting-row">
+      <div class="label">On a miss</div>
+      <div class="row" id="missmodes"></div>
+    </div>
+    <div class="setting-row" style="justify-content:space-between">
+      <span class="muted" id="poolinfo"></span>
+      <button class="btn primary" id="start">Start <kbd style="margin-left:6px">Enter</kbd></button>
+    </div>
+  </div>
+
+  <div id="weak-wrap" class="hidden">
+    <h2>Weakest right now</h2>
+    <div class="weak-list jp" id="weak"></div>
+  </div>
+
+  <h2>Mastery</h2>
+  <div class="row" style="justify-content:space-between;margin-bottom:10px">
+    <div class="tabs" id="setup-tabs"></div>
+    <div class="legend" id="setup-legend"></div>
+  </div>
+  <div class="grids jp" id="setup-grid"></div>
+
+  <h2>Data</h2>
+  <div class="row">
+    <button class="btn" id="export">Export progress</button>
+    <button class="btn" id="import">Import progress</button>
+    <input type="file" id="importfile" accept="application/json" class="hidden">
+    <button class="btn" id="reset">Reset all progress</button>
+    <span class="muted" id="datamsg"></span>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:14px">
+    Accepts Hepburn and Kunrei spellings (shi/si, chi/ti, tsu/tu, fu/hu, ji/zi, sha/sya, ja/jya/zya…). ん is <b>n</b>, を is <b>wo</b> or <b>o</b>.
+    A wrong answer is marked as soon as what you typed can't become a right one. <kbd>Enter</kbd> or <kbd>Space</kbd> with nothing typed skips (counts as a miss). <kbd>Esc</kbd> ends a run early.
+  </p>
+</section>
+
+<!-- ============ RUN ============ -->
+<section id="run" class="hidden">
+  <div class="hud">
+    <div class="row"><div class="clock" id="clock">1:00</div><button class="btn endbtn" id="endbtn">End</button></div>
+    <div class="hud-stats">
+      <div class="hud-stat"><b id="h-correct">0</b><span>correct</span></div>
+      <div class="hud-stat"><b id="h-acc">–</b><span>accuracy</span></div>
+      <div class="hud-stat"><b id="h-streak">0</b><span>streak</span></div>
+    </div>
+  </div>
+  <div class="timebar"><div id="timebar"></div></div>
+  <div class="stage">
+    <div class="kana jp" id="kana">あ</div>
+    <div class="reveal" id="reveal"></div>
+    <input id="answer" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="latin" aria-label="Romaji">
+    <div class="hint" id="hint">Start typing — the clock starts on your first key.</div>
+    <div class="lastmiss" id="lastmiss"></div>
+    <div class="trail jp" id="trail"></div>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="results" class="hidden">
+  <header class="top">
+    <h1 id="r-title">Results</h1>
+    <div class="row">
+      <button class="btn primary" id="again">Again <kbd style="margin-left:6px">Enter</kbd></button>
+      <button class="btn" id="tosetup">Settings <kbd style="margin-left:6px">Esc</kbd></button>
+    </div>
+  </header>
+  <p class="sub" id="r-sub" style="margin-top:4px"></p>
+  <div class="tiles" id="tiles"></div>
+
+  <h2>Every answer, in order</h2>
+  <div class="card">
+    <div class="legend" style="margin-bottom:8px">
+      <span><span class="sw" style="background:var(--hit)"></span>✓ correct</span>
+      <span><span class="sw" style="background:var(--miss)"></span>✗ missed</span>
+      <span class="muted">bar height = response time</span>
+    </div>
+    <div id="timeline"></div>
+  </div>
+
+  <div class="two">
+    <div>
+      <h2>Needs work this round</h2>
+      <div class="card tablewrap"><table id="worst"></table></div>
+    </div>
+    <div>
+      <h2>Mix-ups</h2>
+      <div class="card" id="confusions"></div>
+    </div>
+  </div>
+
+  <div id="hist-wrap">
+    <h2>Progress across sessions</h2>
+    <div class="two">
+      <div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">Correct per minute</div><div id="hist-kpm"></div></div>
+      <div class="card"><div class="muted" style="font-size:13px;margin-bottom:6px">Accuracy</div><div id="hist-acc"></div></div>
+    </div>
+  </div>
+
+  <h2>Mastery <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">— outlined: seen this round</span></h2>
+  <div class="row" style="justify-content:space-between;margin-bottom:10px">
+    <div class="tabs" id="res-tabs"></div>
+    <div class="legend" id="res-legend"></div>
+  </div>
+  <div class="grids jp" id="res-grid"></div>
+</section>
+
+</main>
+<div id="tip" class="hidden"></div>
+
+<script>
+'use strict';
+// ---------------------------------------------------------------- data
+const BASIC = [
+  [['あ','a'],['い','i'],['う','u'],['え','e'],['お','o']],
+  [['か','ka'],['き','ki'],['く','ku'],['け','ke'],['こ','ko']],
+  [['さ','sa'],['し','shi si'],['す','su'],['せ','se'],['そ','so']],
+  [['た','ta'],['ち','chi ti'],['つ','tsu tu'],['て','te'],['と','to']],
+  [['な','na'],['に','ni'],['ぬ','nu'],['ね','ne'],['の','no']],
+  [['は','ha'],['ひ','hi'],['ふ','fu hu'],['へ','he'],['ほ','ho']],
+  [['ま','ma'],['み','mi'],['む','mu'],['め','me'],['も','mo']],
+  [['や','ya'],null,['ゆ','yu'],null,['よ','yo']],
+  [['ら','ra'],['り','ri'],['る','ru'],['れ','re'],['ろ','ro']],
+  [['わ','wa'],null,null,null,['を','wo o']],
+  [['ん','n'],null,null,null,null],
+];
+const DAKUTEN = [
+  [['が','ga'],['ぎ','gi'],['ぐ','gu'],['げ','ge'],['ご','go']],
+  [['ざ','za'],['じ','ji zi'],['ず','zu'],['ぜ','ze'],['ぞ','zo']],
+  [['だ','da'],['ぢ','ji di'],['づ','zu du'],['で','de'],['ど','do']],
+  [['ば','ba'],['び','bi'],['ぶ','bu'],['べ','be'],['ぼ','bo']],
+  [['ぱ','pa'],['ぴ','pi'],['ぷ','pu'],['ぺ','pe'],['ぽ','po']],
+];
+const COMBO = [
+  [['きゃ','kya'],['きゅ','kyu'],['きょ','kyo']],
+  [['しゃ','sha sya'],['しゅ','shu syu'],['しょ','sho syo']],
+  [['ちゃ','cha tya cya'],['ちゅ','chu tyu cyu'],['ちょ','cho tyo cyo']],
+  [['にゃ','nya'],['にゅ','nyu'],['にょ','nyo']],
+  [['ひゃ','hya'],['ひゅ','hyu'],['ひょ','hyo']],
+  [['みゃ','mya'],['みゅ','myu'],['みょ','myo']],
+  [['りゃ','rya'],['りゅ','ryu'],['りょ','ryo']],
+  [['ぎゃ','gya'],['ぎゅ','gyu'],['ぎょ','gyo']],
+  [['じゃ','ja jya zya'],['じゅ','ju jyu zyu'],['じょ','jo jyo zyo']],
+  [['びゃ','bya'],['びゅ','byu'],['びょ','byo']],
+  [['ぴゃ','pya'],['ぴゅ','pyu'],['ぴょ','pyo']],
+];
+const LAYOUT = {
+  basic:   { cols: 5, rows: BASIC,   label: 'Basic' },
+  dakuten: { cols: 5, rows: DAKUTEN, label: 'Dakuten' },
+  combo:   { cols: 3, rows: COMBO,   label: 'Combos' },
+};
+const SCRIPTS = { h: 'Hiragana', k: 'Katakana' };
+const DURATIONS = [30, 60, 120, 180, 300, 600];
+const MISS_MODES = [['flow', 'Keep going'], ['pause', 'Show answer, any key to continue']];
+
+const toKata = s => [...s].map(ch => {
+  const c = ch.charCodeAt(0);
+  return c >= 0x3041 && c <= 0x3096 ? String.fromCharCode(c + 0x60) : ch;
+}).join('');
+
+const KANA = {};   // char -> {ch, script, group, answers, romaji}
+const SETS = {};   // 'h-basic' -> {script, group, keys}
+for (const script of Object.keys(SCRIPTS)) {
+  for (const group of Object.keys(LAYOUT)) {
+    const keys = [];
+    for (const row of LAYOUT[group].rows) for (const cell of row) {
+      if (!cell) continue;
+      const ch = script === 'h' ? cell[0] : toKata(cell[0]);
+      const answers = cell[1].split(' ');
+      KANA[ch] = { ch, script, group, answers, romaji: answers[0] };
+      keys.push(ch);
+    }
+    SETS[script + '-' + group] = { script, group, keys };
+  }
+}
+const ALL_ROMAJI = new Set(Object.values(KANA).flatMap(k => k.answers));
+const ALL_PREFIX = new Set();
+for (const r of ALL_ROMAJI) for (let i = 1; i <= r.length; i++) ALL_PREFIX.add(r.slice(0, i));
+// romaji that are also the start of a longer one ("n" -> "na"); typing these is not yet a final answer
+const EXTENDABLE = new Set([...ALL_ROMAJI].filter(r => [...ALL_ROMAJI].some(o => o !== r && o.startsWith(r))));
+
+// ---------------------------------------------------------------- storage
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const K_SETTINGS = 'kanasprint.settings.v1', K_STATS = 'kanasprint.stats.v1', K_HISTORY = 'kanasprint.history.v1';
+let settings = Object.assign({ sets: ['h-basic', 'k-basic'], duration: 60, missMode: 'flow' }, store.get(K_SETTINGS, {}));
+settings.sets = settings.sets.filter(s => SETS[s]);
+let stats = store.get(K_STATS, {});     // char -> {n, c, w, acc, t, last, cf:{typed:count}}
+let history = store.get(K_HISTORY, []);  // [{date, duration, sets, total, correct, acc, kpm, avgMs, bestStreak, early}]
+const saveSettings = () => store.set(K_SETTINGS, settings);
+const saveStats = () => store.set(K_STATS, stats);
+const saveHistory = () => store.set(K_HISTORY, history);
+
+// ---------------------------------------------------------------- SRS model
+// Each kana keeps an exponentially weighted accuracy and an exponentially weighted
+// time-to-correct. Mastery mixes the two; selection weight rises steeply as mastery falls.
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const ALPHA = 0.4;
+const SLOW_MS = 4000;
+const fastMs = key => KANA[key].group === 'combo' ? 1100 : 800;
+
+function mastery(key) {
+  const s = stats[key];
+  if (!s || !s.n) return null;
+  const speed = s.t == null ? 0 : clamp((SLOW_MS - s.t) / (SLOW_MS - fastMs(key)), 0, 1);
+  return s.acc * (0.35 + 0.65 * speed);
+}
+
+function recordAnswer(key, ok, dt, typed) {
+  const s = stats[key] || (stats[key] = { n: 0, c: 0, w: 0, acc: 0.5, t: null, last: 0, cf: {} });
+  s.n++;
+  if (ok) {
+    s.c++;
+    const t = Math.min(dt, 10000);
+    s.t = s.t == null ? t : s.t * (1 - ALPHA) + t * ALPHA;
+  } else {
+    s.w++;
+    if (typed) s.cf[typed] = (s.cf[typed] || 0) + 1;
+  }
+  s.acc = s.acc * (1 - ALPHA) + (ok ? 1 : 0) * ALPHA;
+  s.last = Date.now();
+}
+
+function weight(key, now) {
+  const m = mastery(key);
+  if (m == null) return 2.5;                           // unseen: introduce eagerly
+  let w = 0.15 + 4 * (1 - m) ** 2;                     // weak kana dominate
+  const hrs = (now - stats[key].last) / 3.6e6;
+  w += Math.min(0.5, hrs / 144) * (1 - m * 0.5);       // long-unseen kana drift back in
+  if (run && run.missed.has(key)) w += 1;              // missed this round
+  return w;
+}
+
+function masteryBin(m) { return m == null ? -1 : clamp(Math.floor(m * 6), 0, 5); }
+
+// ---------------------------------------------------------------- helpers
+const $ = s => document.querySelector(s);
+const el = (tag, attrs = {}, html = '') => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (html) e.innerHTML = html;
+  return e;
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtClock = sec => { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+const fmtDur = sec => sec < 60 ? sec + 's' : (sec / 60) + ' min';
+const fmtS = ms => ms == null ? '–' : (ms / 1000).toFixed(2) + 's';
+const pct = x => x == null ? '–' : Math.round(x * 100) + '%';
+const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+const poolKeys = () => settings.sets.flatMap(id => SETS[id].keys);
+const setsSig = sets => [...sets].sort().join(',');
+function show(id) { for (const s of ['setup', 'run', 'results']) $('#' + s).classList.toggle('hidden', s !== id); }
+
+function lookalike(key, typed) {
+  const k = KANA[key];
+  const other = Object.values(KANA).find(o => o.script === k.script && o.answers.includes(typed));
+  return other ? other.ch : null;
+}
+
+function kanaTip(key) {
+  const k = KANA[key], s = stats[key], m = mastery(key);
+  if (!s) return `${key}  ${k.answers.join(' / ')}\nnot seen yet`;
+  const cf = Object.entries(s.cf || {}).sort((a, b) => b[1] - a[1]).slice(0, 3)
+    .map(([t, n]) => `${t}${lookalike(key, t) ? ' (' + lookalike(key, t) + ')' : ''} ×${n}`).join(', ');
+  return `${key}  ${k.answers.join(' / ')}\n` +
+    `mastery ${pct(m)} · seen ${s.n}× · ${s.w} missed\n` +
+    `typical time ${fmtS(s.t)}` + (cf ? `\noften typed: ${cf}` : '');
+}
+
+// tooltip: any element with data-tip
+const tip = $('#tip');
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t) { tip.classList.add('hidden'); return; }
+  tip.textContent = t.getAttribute('data-tip');
+  tip.classList.remove('hidden');
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+});
+
+// ---------------------------------------------------------------- mastery grid
+function renderGrid(container, script, { highlight = null, activeSets = null } = {}) {
+  container.innerHTML = '';
+  for (const group of Object.keys(LAYOUT)) {
+    const L = LAYOUT[group];
+    const wrap = el('div');
+    wrap.appendChild(el('div', { class: 'gtitle' }, L.label));
+    const g = el('div', { class: 'grid ' + group });
+    g.style.gridTemplateColumns = `repeat(${L.cols}, auto)`;
+    const off = activeSets && !activeSets.includes(script + '-' + group);
+    for (const row of L.rows) for (const cell of row) {
+      if (!cell) { g.appendChild(el('div', { class: 'c empty' })); continue; }
+      const ch = script === 'h' ? cell[0] : toKata(cell[0]);
+      const b = masteryBin(mastery(ch));
+      const c = el('div', { class: 'c' + (highlight && highlight.has(ch) ? ' cur' : '') + (off ? ' off' : ''), 'data-tip': kanaTip(ch) },
+        `<span class="ch">${ch}</span><span class="ro">${KANA[ch].romaji}</span>`);
+      c.style.background = b < 0 ? 'var(--unseen)' : `var(--m${b})`;
+      c.style.color = b < 0 ? 'var(--unseen-t)' : `var(--mt${b})`;
+      g.appendChild(c);
+    }
+    wrap.appendChild(g);
+    container.appendChild(wrap);
+  }
+}
+function renderLegend(container) {
+  container.innerHTML = `<span><span class="sw" style="background:var(--unseen);border:1px solid var(--border)"></span>not seen</span>
+    <span>weak<span class="ramp">${[0,1,2,3,4,5].map(i => `<i style="background:var(--m${i})"></i>`).join('')}</span>strong</span>`;
+}
+function makeTabs(container, current, onPick) {
+  container.innerHTML = '';
+  for (const [s, label] of Object.entries(SCRIPTS)) {
+    const b = el('button', { 'aria-pressed': String(s === current) }, label);
+    b.onclick = () => onPick(s);
+    container.appendChild(b);
+  }
+}
+
+// ---------------------------------------------------------------- setup screen
+let setupScript = settings.sets[0] ? settings.sets[0][0] : 'h';
+function renderSetup() {
+  for (const script of Object.keys(SCRIPTS)) {
+    const box = $('#sets-' + script); box.innerHTML = '';
+    for (const group of Object.keys(LAYOUT)) {
+      const id = script + '-' + group;
+      const on = settings.sets.includes(id);
+      const b = el('button', { class: 'chip', 'aria-pressed': String(on) },
+        `${LAYOUT[group].label} <span class="muted">${SETS[id].keys.length}</span>`);
+      b.onclick = () => {
+        settings.sets = on ? settings.sets.filter(x => x !== id) : [...settings.sets, id];
+        saveSettings(); renderSetup();
+      };
+      box.appendChild(b);
+    }
+  }
+  const dbox = $('#durations'); dbox.innerHTML = '';
+  for (const d of DURATIONS) {
+    const b = el('button', { class: 'chip', 'aria-pressed': String(settings.duration === d) }, fmtDur(d));
+    b.onclick = () => { settings.duration = d; saveSettings(); renderSetup(); };
+    dbox.appendChild(b);
+  }
+  const mbox = $('#missmodes'); mbox.innerHTML = '';
+  for (const [id, label] of MISS_MODES) {
+    const b = el('button', { class: 'chip', 'aria-pressed': String(settings.missMode === id) }, label);
+    b.onclick = () => { settings.missMode = id; saveSettings(); renderSetup(); };
+    mbox.appendChild(b);
+  }
+  const pool = poolKeys();
+  const seen = pool.filter(k => stats[k]).length;
+  $('#poolinfo').textContent = pool.length ? `${pool.length} kana selected · ${seen} seen before` : 'Pick at least one set';
+  $('#start').disabled = !pool.length;
+
+  const best = pb(settings.duration, settings.sets);
+  const totalAns = Object.values(stats).reduce((a, s) => a + s.n, 0);
+  $('#lifetime').textContent = history.length
+    ? `${history.length} sessions · ${totalAns} answers` + (best ? ` · best for this setup: ${best.correct} in ${fmtDur(settings.duration)}` : '')
+    : '';
+
+  const weak = pool.filter(k => mastery(k) != null).sort((a, b) => mastery(a) - mastery(b)).slice(0, 10);
+  $('#weak-wrap').classList.toggle('hidden', !weak.length);
+  $('#weak').innerHTML = weak.map(k =>
+    `<span class="w" data-tip="${esc(kanaTip(k))}"><span class="ch">${k}</span><span class="muted">${pct(mastery(k))}</span></span>`).join('');
+
+  makeTabs($('#setup-tabs'), setupScript, s => { setupScript = s; renderSetup(); });
+  renderLegend($('#setup-legend'));
+  renderGrid($('#setup-grid'), setupScript, { activeSets: settings.sets });
+}
+
+function pb(duration, sets, excludeDate = null) {
+  const sig = setsSig(sets);
+  const same = history.filter(h => !h.early && h.duration === duration && setsSig(h.sets) === sig && h.date !== excludeDate);
+  return same.length ? same.reduce((a, b) => b.correct > a.correct ? b : a) : null;
+}
+
+$('#start').onclick = () => startRun();
+
+$('#export').onclick = () => {
+  const blob = new Blob([JSON.stringify({ app: 'kana-sprint', v: 1, settings, stats, history }, null, 1)], { type: 'application/json' });
+  const a = el('a', { href: URL.createObjectURL(blob), download: `kana-sprint-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.appendChild(a); a.click(); a.remove();
+};
+$('#import').onclick = () => $('#importfile').click();
+$('#importfile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.app !== 'kana-sprint') throw new Error('not a Kana Sprint export');
+    stats = d.stats || {}; history = d.history || [];
+    if (d.settings) settings = Object.assign(settings, d.settings);
+    saveStats(); saveHistory(); saveSettings();
+    $('#datamsg').textContent = 'Imported.';
+    renderSetup();
+  } catch (err) { $('#datamsg').textContent = 'Import failed: ' + err.message; }
+  e.target.value = '';
+};
+let resetArmed = null;
+$('#reset').onclick = () => {
+  const b = $('#reset');
+  if (!resetArmed) {
+    b.textContent = 'Click again to erase everything'; b.classList.add('danger-armed');
+    resetArmed = setTimeout(() => { resetArmed = null; b.textContent = 'Reset all progress'; b.classList.remove('danger-armed'); }, 3000);
+    return;
+  }
+  clearTimeout(resetArmed); resetArmed = null;
+  stats = {}; history = []; saveStats(); saveHistory();
+  b.textContent = 'Reset all progress'; b.classList.remove('danger-armed');
+  $('#datamsg').textContent = 'Progress erased.';
+  renderSetup();
+};
+
+// ---------------------------------------------------------------- run
+let run = null;
+const input = $('#answer');
+
+function startRun() {
+  const pool = poolKeys();
+  if (!pool.length) return;
+  run = {
+    pool, duration: settings.duration, sets: [...settings.sets], missMode: settings.missMode,
+    started: false, startedAt: 0, endAt: 0, idx: 0, answers: [], relearn: [], stage: {},
+    recent: [], missed: new Set(), streak: 0, bestStreak: 0, before: {},
+    current: null, shownAt: 0, paused: false, swallowN: false, timer: null, over: false,
+  };
+  for (const k of pool) run.before[k] = mastery(k);
+  show('run');
+  $('#clock').textContent = fmtClock(run.duration); $('#clock').classList.remove('low');
+  $('#timebar').style.width = '100%';
+  $('#h-correct').textContent = '0'; $('#h-acc').textContent = '–'; $('#h-streak').textContent = '0';
+  $('#trail').innerHTML = ''; $('#lastmiss').innerHTML = '';
+  $('#hint').classList.remove('hidden');
+  nextCard();
+  input.focus();
+}
+
+function pickNext() {
+  const r = run, last = r.recent[r.recent.length - 1];
+  // 1. kana missed earlier this round come back after a few cards
+  const due = r.relearn.filter(x => x.due <= r.idx && x.key !== last).sort((a, b) => a.due - b.due)[0];
+  if (due) { r.relearn.splice(r.relearn.indexOf(due), 1); return due.key; }
+  // 2. otherwise weighted random, avoiding the last few shown
+  const avoid = new Set(r.recent.slice(-Math.min(3, r.pool.length - 1)));
+  const cands = r.pool.filter(k => !avoid.has(k));
+  const now = Date.now();
+  const ws = cands.map(k => weight(k, now));
+  let x = Math.random() * ws.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < cands.length; i++) { x -= ws[i]; if (x <= 0) return cands[i]; }
+  return cands[cands.length - 1];
+}
+
+function nextCard() {
+  const key = pickNext();
+  run.current = key;
+  run.recent.push(key); if (run.recent.length > 10) run.recent.shift();
+  run.paused = false;
+  const k = $('#kana');
+  k.textContent = key; k.classList.remove('miss');
+  $('#reveal').textContent = '';
+  input.value = '';
+  run.shownAt = performance.now();
+}
+
+function beginClock() {
+  run.started = true;
+  run.startedAt = performance.now();
+  run.endAt = run.startedAt + run.duration * 1000;
+  run.shownAt = run.startedAt;
+  $('#hint').classList.add('hidden');
+  run.timer = setInterval(tick, 100);
+}
+
+function tick() {
+  const left = (run.endAt - performance.now()) / 1000;
+  $('#clock').textContent = fmtClock(left);
+  $('#clock').classList.toggle('low', left <= 10);
+  $('#timebar').style.width = clamp(left / run.duration * 100, 0, 100) + '%';
+  if (left <= 0) finishRun(false);
+}
+
+function answer(ok, typed) {
+  const r = run, key = r.current;
+  const dt = performance.now() - r.shownAt;
+  r.answers.push({ key, ok, dt, typed, at: performance.now() - r.startedAt });
+  recordAnswer(key, ok, dt, typed);
+  saveStats();
+  r.idx++;
+  if (ok) {
+    r.streak++; r.bestStreak = Math.max(r.bestStreak, r.streak);
+    // relearning ladder: miss -> back in 3-5 cards -> if right, once more in 8-11 -> done
+    if (r.stage[key] === 1) { r.relearn.push({ key, due: r.idx + 8 + Math.floor(Math.random() * 4) }); r.stage[key] = 2; }
+    else if (r.stage[key] === 2) delete r.stage[key];
+  } else {
+    r.streak = 0; r.missed.add(key);
+    r.relearn = r.relearn.filter(x => x.key !== key);
+    r.relearn.push({ key, due: r.idx + 3 + Math.floor(Math.random() * 3) });
+    r.stage[key] = 1;
+  }
+  r.swallowN = ok && key in KANA && KANA[key].romaji === 'n';
+  updateHud(key, ok, typed);
+  if (!ok && r.missMode === 'pause') {
+    r.paused = true;
+    $('#kana').classList.add('miss');
+    $('#reveal').textContent = KANA[key].answers.join(' / ');
+    input.value = '';
+    return;
+  }
+  nextCard();
+}
+
+function updateHud(key, ok, typed) {
+  const r = run;
+  const correct = r.answers.filter(a => a.ok).length;
+  $('#h-correct').textContent = correct;
+  $('#h-acc').textContent = pct(correct / r.answers.length);
+  $('#h-streak').textContent = r.streak;
+  const t = el('span', { class: 't' + (ok ? '' : ' bad') }, `${key}<span class="i">${ok ? '✓' : '✗'}</span>`);
+  const trail = $('#trail');
+  trail.prepend(t);
+  while (trail.children.length > 10) trail.lastChild.remove();
+  if (!ok) {
+    const look = typed ? lookalike(key, typed) : null;
+    $('#lastmiss').innerHTML = `✗ <span class="jp"><b>${key}</b></span> is <b>${esc(KANA[key].answers.join(' / '))}</b>` +
+      (typed ? ` — you typed <b>${esc(typed)}</b>${look ? ` (that's <span class="jp">${look}</span>)` : ''}` : ' — skipped');
+  }
+}
+
+const isPrefixOf = (v, answers) => answers.some(a => a.startsWith(v));
+
+input.addEventListener('input', () => {
+  if (!run || run.over) return;
+  if (run.paused) { input.value = ''; return; }
+  if (!run.started) beginClock();
+  const ans = KANA[run.current].answers;
+  let v = input.value.toLowerCase().replace(/[^a-z]/g, '');
+  // people who type ん as "nn": drop the trailing n that spills into the next card
+  if (run.swallowN) {
+    if (v[0] === 'n' && !isPrefixOf(v, ans) && (v.length === 1 || isPrefixOf(v.slice(1), ans))) v = v.slice(1);
+    run.swallowN = false;
+  }
+  input.value = v;
+  if (!v) return;
+  if (ans.includes(v)) return answer(true, v);
+  if (isPrefixOf(v, ans)) return;
+  // wrong once it can no longer become any kana's romaji, or it already is one (and can't grow)
+  if (!ALL_PREFIX.has(v) || (ALL_ROMAJI.has(v) && !EXTENDABLE.has(v))) answer(false, v);
+});
+
+input.addEventListener('keydown', e => {
+  if (!run || run.over) return;
+  if (e.key === 'Escape') { e.preventDefault(); finishRun(true); return; }
+  if (run.paused) {
+    e.preventDefault();
+    if (!e.metaKey && !e.ctrlKey && (e.key.length === 1 || e.key === 'Enter')) nextCard();
+    return;
+  }
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    if (!run.started) beginClock();
+    answer(false, input.value.toLowerCase().replace(/[^a-z]/g, ''));
+  }
+});
+// keep focus in the answer box while running
+document.addEventListener('mousedown', e => {
+  if (run && !run.over && !$('#run').classList.contains('hidden') && e.target !== input) { e.preventDefault(); input.focus(); }
+});
+
+function finishRun(early) {
+  const r = run;
+  if (!r || r.over) return;
+  r.over = true;
+  clearInterval(r.timer);
+  input.blur();
+  if (!r.answers.length) { run = null; show('setup'); renderSetup(); return; }
+  const elapsed = early ? (performance.now() - r.startedAt) / 1000 : r.duration;
+  const correct = r.answers.filter(a => a.ok).length;
+  const okTimes = r.answers.filter(a => a.ok).map(a => a.dt);
+  const entry = {
+    date: Date.now(), duration: r.duration, sets: r.sets, elapsed: Math.round(elapsed),
+    total: r.answers.length, correct, acc: correct / r.answers.length,
+    kpm: correct / (elapsed / 60), avgMs: mean(okTimes), medMs: median(okTimes),
+    bestStreak: r.bestStreak, early,
+  };
+  history.push(entry);
+  if (history.length > 500) history = history.slice(-500);
+  saveHistory();
+  show('results');
+  resultsShownAt = performance.now();
+  renderResults(r, entry);
+  window.scrollTo(0, 0);
+}
+
+// ---------------------------------------------------------------- results
+let resScript = 'h';
+let resultsShownAt = 0;
+function renderResults(r, e) {
+  const prev = pb(e.duration, e.sets, e.date);
+  const setNames = e.sets.map(id => `${SCRIPTS[SETS[id].script]} ${LAYOUT[SETS[id].group].label.toLowerCase()}`).join(', ');
+  $('#r-title').textContent = e.early ? 'Ended early' : (prev && e.correct > prev.correct ? 'New best!' : 'Time!');
+  $('#r-sub').textContent = `${fmtDur(e.duration)} · ${setNames}` + (e.early ? ` · stopped after ${e.elapsed}s (not counted toward bests)` : '');
+
+  const tile = (v, k, d = '') => `<div class="tile"><div class="v">${v}</div><div class="k">${k}</div>${d ? `<div class="d">${d}</div>` : ''}</div>`;
+  let pbNote = '';
+  if (!e.early) {
+    if (!prev) pbNote = 'first run with this setup';
+    else if (e.correct > prev.correct) pbNote = `▲ ${e.correct - prev.correct} over previous best (${prev.correct})`;
+    else pbNote = `best: ${prev.correct}`;
+  }
+  const lastSame = history.slice(0, -1).filter(h => h.duration === e.duration && setsSig(h.sets) === setsSig(e.sets)).pop();
+  $('#tiles').innerHTML =
+    tile(e.correct, 'correct', pbNote) +
+    tile(e.kpm.toFixed(1), 'correct per minute', lastSame ? `last time ${lastSame.kpm.toFixed(1)}` : '') +
+    tile(pct(e.acc), 'accuracy', `${e.total - e.correct} missed of ${e.total}`) +
+    tile(fmtS(e.medMs), 'median time to answer', e.avgMs ? `mean ${fmtS(e.avgMs)}` : '') +
+    tile(e.bestStreak, 'best streak');
+
+  renderTimeline(r.answers);
+  renderWorst(r);
+  renderConfusions(r);
+  renderHistory();
+
+  const seen = new Set(r.answers.map(a => a.key));
+  resScript = r.answers[0] ? KANA[r.answers[0].key].script : 'h';
+  const drawGrid = () => {
+    makeTabs($('#res-tabs'), resScript, s => { resScript = s; drawGrid(); });
+    renderGrid($('#res-grid'), resScript, { highlight: seen, activeSets: e.sets });
+  };
+  renderLegend($('#res-legend'));
+  drawGrid();
+}
+
+function renderTimeline(answers) {
+  const box = $('#timeline');
+  const W = Math.max(280, box.clientWidth || 900), H = 170, padL = 34, padB = 18, padT = 6;
+  const maxT = Math.max(2000, Math.ceil(Math.min(8000, Math.max(...answers.map(a => a.dt))) / 1000) * 1000);
+  const n = answers.length;
+  const slot = (W - padL) / n;
+  const gap = slot >= 5 ? 2 : (slot >= 3 ? 1 : 0);
+  const bw = Math.max(1, slot - gap);
+  const y = t => padT + (H - padT - padB) * (1 - Math.min(t, maxT) / maxT);
+  let s = '';
+  const step = maxT <= 3000 ? 1000 : maxT <= 6000 ? 2000 : 4000;
+  for (let t = 0; t <= maxT; t += step) {
+    s += `<line class="gridline" x1="${padL}" x2="${W}" y1="${y(t)}" y2="${y(t)}"/>`;
+    s += `<text x="${padL - 6}" y="${y(t) + 4}" text-anchor="end">${t / 1000}s</text>`;
+  }
+  answers.forEach((a, i) => {
+    const x = padL + i * slot + gap / 2, top = y(a.dt), base = y(0), h = Math.max(1.5, base - top);
+    const fill = a.ok ? 'var(--hit)' : 'var(--miss)';
+    const rr = Math.min(4, bw / 2, h);
+    s += rr >= 1.5
+      ? `<path d="M${x},${base} V${base - h + rr} Q${x},${base - h} ${x + rr},${base - h} H${x + bw - rr} Q${x + bw},${base - h} ${x + bw},${base - h + rr} V${base} Z" fill="${fill}"/>`
+      : `<rect x="${x}" y="${base - h}" width="${bw}" height="${h}" fill="${fill}"/>`;
+    if (a.dt > maxT) s += `<text x="${x + bw / 2}" y="${padT + 9}" text-anchor="middle">↑</text>`;
+    const tipTxt = `#${i + 1}  ${a.key}  ${a.ok ? '✓' : '✗'} ${fmtS(a.dt)}` +
+      (a.ok ? '' : `\nanswer: ${KANA[a.key].answers.join(' / ')}` + (a.typed ? `\nyou typed: ${a.typed}` : '\nskipped'));
+    s += `<rect x="${padL + i * slot}" y="0" width="${slot}" height="${H - padB}" fill="transparent" data-tip="${esc(tipTxt)}"/>`;
+  });
+  const every = Math.max(1, Math.ceil(n / Math.floor((W - padL) / 40)));
+  for (let i = 0; i < n; i += every) {
+    if (i === 0 && n > 1) continue;
+    s += `<text x="${padL + (i + 0.5) * slot}" y="${H - 4}" text-anchor="middle">${i + 1}</text>`;
+  }
+  box.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">${s}</svg>`;
+}
+
+function renderWorst(r) {
+  const agg = {};
+  for (const a of r.answers) {
+    const g = agg[a.key] || (agg[a.key] = { key: a.key, n: 0, miss: 0, times: [] });
+    g.n++; if (!a.ok) g.miss++; else g.times.push(a.dt);
+  }
+  const rows = Object.values(agg).map(g => ({ ...g, avg: mean(g.times) }))
+    .sort((a, b) => (b.miss - a.miss) || ((b.avg ?? 1e9) - (a.avg ?? 1e9)))
+    .filter(g => g.miss > 0 || g.avg > 1200)
+    .slice(0, 10);
+  if (!rows.length) { $('#worst').innerHTML = '<tr><td class="muted">Nothing slow or missed. Clean round.</td></tr>'; return; }
+  $('#worst').innerHTML = `<tr><th>Kana</th><th class="num">Seen</th><th class="num">Missed</th><th class="num">Avg time</th><th class="num">Mastery</th></tr>` +
+    rows.map(g => {
+      const before = r.before[g.key], after = mastery(g.key);
+      const arrow = before == null ? 'new' : (after > before + 0.005 ? '▲' : after < before - 0.005 ? '▼' : '=');
+      return `<tr data-tip="${esc(kanaTip(g.key))}"><td><span class="big jp">${g.key}</span> <span class="muted">${KANA[g.key].romaji}</span></td>
+        <td class="num">${g.n}</td><td class="num">${g.miss || '<span class="muted">0</span>'}</td>
+        <td class="num">${fmtS(g.avg)}</td><td class="num">${pct(after)} <span class="muted">${arrow}</span></td></tr>`;
+    }).join('');
+}
+
+function renderConfusions(r) {
+  const c = {};
+  for (const a of r.answers) if (!a.ok) {
+    const id = a.key + '|' + a.typed;
+    (c[id] = c[id] || { key: a.key, typed: a.typed, n: 0 }).n++;
+  }
+  const rows = Object.values(c).sort((a, b) => b.n - a.n).slice(0, 12);
+  if (!rows.length) { $('#confusions').innerHTML = '<span class="muted">No misses.</span>'; return; }
+  $('#confusions').innerHTML = '<table>' + rows.map(x => {
+    const look = x.typed ? lookalike(x.key, x.typed) : null;
+    return `<tr><td><span class="big jp">${x.key}</span> <span class="muted">is</span> ${esc(KANA[x.key].answers[0])}</td>
+      <td>${x.typed ? `you typed <b>${esc(x.typed)}</b>${look ? ` <span class="muted">→</span> <span class="jp big">${look}</span>` : ''}` : '<span class="muted">skipped</span>'}</td>
+      <td class="num">×${x.n}</td></tr>`;
+  }).join('') + '</table>';
+}
+
+function renderHistory() {
+  const h = history.filter(x => !x.early).slice(-40);
+  $('#hist-wrap').classList.toggle('hidden', h.length < 2);
+  if (h.length < 2) return;
+  lineChart($('#hist-kpm'), h, x => x.kpm, v => v.toFixed(1), false);
+  lineChart($('#hist-acc'), h, x => x.acc, v => Math.round(v * 100) + '%', true);
+}
+
+function lineChart(box, data, get, fmt, isPct) {
+  const W = Math.max(260, box.clientWidth || 420), H = 140, padL = 38, padR = 10, padT = 10, padB = 20;
+  const vals = data.map(get);
+  let lo = isPct ? Math.min(0.5, Math.floor(Math.min(...vals) * 10) / 10) : 0;
+  let hi = isPct ? 1 : Math.max(5, Math.ceil(Math.max(...vals) / 5) * 5);
+  const x = i => padL + (W - padL - padR) * (data.length === 1 ? 0.5 : i / (data.length - 1));
+  const y = v => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
+  let s = '';
+  const ticks = isPct ? [lo, (lo + 1) / 2, 1] : [0, hi / 2, hi];
+  for (const t of ticks) s += `<line class="gridline" x1="${padL}" x2="${W - padR}" y1="${y(t)}" y2="${y(t)}"/><text x="${padL - 6}" y="${y(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
+  s += `<path d="${vals.map((v, i) => (i ? 'L' : 'M') + x(i) + ',' + y(v)).join(' ')}" fill="none" stroke="var(--hit)" stroke-width="2" stroke-linejoin="round"/>`;
+  const last = vals.length - 1;
+  s += `<circle cx="${x(last)}" cy="${y(vals[last])}" r="4.5" fill="var(--hit)" stroke="var(--surface)" stroke-width="2"/>`;
+  s += `<text x="${x(last)}" y="${y(vals[last]) - 9}" text-anchor="end" style="fill:var(--text)">${fmt(vals[last])}</text>`;
+  const slot = (W - padL - padR) / Math.max(1, data.length - 1);
+  data.forEach((d, i) => {
+    const date = new Date(d.date);
+    const tipTxt = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\n` +
+      `${fmtDur(d.duration)} · ${d.correct}/${d.total} correct\n${d.kpm.toFixed(1)}/min · ${pct(d.acc)} · median ${fmtS(d.medMs)}`;
+    s += `<rect x="${x(i) - slot / 2}" y="0" width="${slot}" height="${H}" fill="transparent" data-tip="${esc(tipTxt)}"/>`;
+  });
+  s += `<text x="${padL}" y="${H - 4}">${data.length} sessions ago</text><text x="${W - padR}" y="${H - 4}" text-anchor="end">latest</text>`;
+  box.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">${s}</svg>`;
+}
+
+$('#endbtn').onclick = () => finishRun(true);
+$('#again').onclick = () => startRun();
+$('#tosetup').onclick = () => { run = null; show('setup'); renderSetup(); };
+
+document.addEventListener('keydown', e => {
+  if (e.target === input) return;
+  if (!$('#setup').classList.contains('hidden') && e.key === 'Enter' && !e.target.closest('button')) { e.preventDefault(); startRun(); }
+  else if (!$('#results').classList.contains('hidden')) {
+    if (performance.now() - resultsShownAt < 800) return;   // swallow keys still in flight from the run
+    if (e.key === 'Enter') { e.preventDefault(); startRun(); }
+    else if (e.key === 'Escape') { run = null; show('setup'); renderSetup(); }
+  }
+});
+
+renderSetup();
+
+// offline support when served over http(s), e.g. GitHub Pages / home-screen app
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
