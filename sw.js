@@ -1,5 +1,5 @@
 // Offline cache: serve from cache instantly, refresh it from the network in the background.
-const CACHE = 'kana-sprint-v1';
+const CACHE = 'kana-sprint-v2';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

@@ -108,10 +108,6 @@ kbd { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px sol
 }
 #answer:focus { border-color: var(--accent); }
 .hint { color: var(--muted); font-size: 13px; text-align: center; }
-.trail { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; min-height: 34px; }
-.trail .t { font-size: 18px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); }
-.trail .t.bad { border-color: var(--miss); color: var(--miss); }
-.trail .t .i { font-size: 11px; margin-left: 3px; }
 .lastmiss { min-height: 22px; color: var(--text-2); font-size: 14px; }
 .lastmiss b { color: var(--text); }
 
@@ -139,7 +135,6 @@ kbd { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px sol
   .reveal { min-height: 30px; font-size: 22px; }
   .clock { font-size: 30px; }
   .hud-stat b { font-size: 18px; }
-  .trail .t:nth-child(n+7) { display: none; }
   .grid .c { width: 38px; height: 42px; }
   .grid.combo .c { width: 48px; }
   .grid .c .ch { font-size: 17px; }
@@ -259,7 +254,6 @@ td .big { font-size: 22px; }
     <input id="answer" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="latin" aria-label="Romaji">
     <div class="hint" id="hint">Start typing — the clock starts on your first key.</div>
     <div class="lastmiss" id="lastmiss"></div>
-    <div class="trail jp" id="trail"></div>
   </div>
 </section>
 
@@ -357,7 +351,7 @@ const LAYOUT = {
   combo:   { cols: 3, rows: COMBO,   label: 'Combos' },
 };
 const SCRIPTS = { h: 'Hiragana', k: 'Katakana' };
-const DURATIONS = [30, 60, 120, 180, 300, 600];
+const DURATIONS = [30, 60, 90, 120, 180, 300, 600];
 const MISS_MODES = [['flow', 'Keep going'], ['pause', 'Show answer, any key to continue']];
 
 const toKata = s => [...s].map(ch => {
@@ -452,7 +446,7 @@ const el = (tag, attrs = {}, html = '') => {
 };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fmtClock = sec => { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
-const fmtDur = sec => sec < 60 ? sec + 's' : (sec / 60) + ' min';
+const fmtDur = sec => sec < 60 || sec % 60 ? sec + 's' : (sec / 60) + ' min';
 const fmtS = ms => ms == null ? '–' : (ms / 1000).toFixed(2) + 's';
 const pct = x => x == null ? '–' : Math.round(x * 100) + '%';
 const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -638,7 +632,7 @@ function startRun() {
   $('#clock').textContent = fmtClock(run.duration); $('#clock').classList.remove('low');
   $('#timebar').style.width = '100%';
   $('#h-correct').textContent = '0'; $('#h-acc').textContent = '–'; $('#h-streak').textContent = '0';
-  $('#trail').innerHTML = ''; $('#lastmiss').innerHTML = '';
+  $('#lastmiss').innerHTML = '';
   $('#hint').classList.remove('hidden');
   nextCard();
   input.focus();
@@ -724,10 +718,6 @@ function updateHud(key, ok, typed) {
   $('#h-correct').textContent = correct;
   $('#h-acc').textContent = pct(correct / r.answers.length);
   $('#h-streak').textContent = r.streak;
-  const t = el('span', { class: 't' + (ok ? '' : ' bad') }, `${key}<span class="i">${ok ? '✓' : '✗'}</span>`);
-  const trail = $('#trail');
-  trail.prepend(t);
-  while (trail.children.length > 10) trail.lastChild.remove();
   if (!ok) {
     const look = typed ? lookalike(key, typed) : null;
     $('#lastmiss').innerHTML = `✗ <span class="jp"><b>${key}</b></span> is <b>${esc(KANA[key].answers.join(' / '))}</b>` +
